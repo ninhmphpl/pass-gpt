@@ -1,0 +1,79 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
+
+name: Report Admob
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+concurrency:
+  group: report-admob
+  cancel-in-progress: true
+jobs:
+  run-spring-boot-apllycation:
+
+    runs-on: self-hosted
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+#      - name: Set up JDK 17
+#        uses: actions/setup-java@v4
+#        with:
+#          java-version: '17'
+#          distribution: 'temurin'
+
+#      - name: Setup Gradle
+#        uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # v3.1.0
+
+#      - name: Change permissions of gradlew
+#        run: chmod +x gradlew
+
+#      - name: Build with Gradle Wrapper
+#        run: ./gradlew build
+
+#      ----------------------- SETUP ENVIRONMENT -------------------------
+      - name: Change User
+        run: sudo su
+
+      - name: Install zip
+        run: sudo apt install zip -y
+
+      - name: Install JDK
+        run: sudo apt install openjdk-17-jdk openjdk-17-jre -y
+
+      - name: Install SDK Man && Gradle
+        run: |
+          curl -s "https://get.sdkman.io" | bash
+          source "$HOME/.sdkman/bin/sdkman-init.sh"
+          sdk version
+          sdk install gradle 8.6
+
+      - name: Make File Service
+        run: | 
+          sudo echo -e "[Unit]
+          Description=My Spring Boot Application
+          After=syslog.target
+          [Service]
+          User=root
+          WorkingDirectory=/home/ubuntu/_work/pass-gpt/pass-gpt
+          ExecStart=/root/.sdkman/candidates/gradle/current/bin/gradle Bootrun
+          SuccessExitStatus=143
+          Restart=always
+          RestartSec=0
+          [Install]
+          WantedBy=multi-user.target" | sudo tee /etc/systemd/system/spring.service
+
+      - name: Spring Boot
+        run: |
+          sudo systemctl daemon-reload
+          sudo systemctl restart spring
+          sudo systemctl status spring
+          sudo systemctl enable spring
