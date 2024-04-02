@@ -64,7 +64,7 @@ jobs:
           [Service]
           User=root
           WorkingDirectory=/home/ubuntu/_work/pass-gpt/pass-gpt
-          ExecStart=/root/.sdkman/candidates/gradle/current/bin/gradle Bootrun
+          ExecStart=/home/ubuntu/.sdkman/candidates/gradle/current/bin/gradle Bootrun
           SuccessExitStatus=143
           Restart=always
           RestartSec=0
