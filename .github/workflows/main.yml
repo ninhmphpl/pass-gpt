@@ -63,7 +63,7 @@ jobs:
           After=syslog.target
           [Service]
           User=root
-          WorkingDirectory=/home/ubuntu/_work/pass-gpt/pass-gpt
+          WorkingDirectory=cd /home/ubuntu/actions-runner/_work/pass-gpt/pass-gpt
           ExecStart=/home/ubuntu/.sdkman/candidates/gradle/current/bin/gradle Bootrun
           SuccessExitStatus=143
           Restart=always
