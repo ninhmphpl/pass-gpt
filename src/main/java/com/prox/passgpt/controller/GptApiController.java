@@ -47,7 +47,4 @@ public class GptApiController {
         if(!pass.equals(password)) throw new JwtException("Password wrong");
         return ResponseEntity.ok(new Data(securityService.getToken()));
     }
-
-
-
 }
