@@ -1,7 +1,7 @@
 package com.prox.passgpt.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.prox.passgpt.service.ApiKeyService;
+import com.prox.passgpt.service.GeminiApiKeyService;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +16,11 @@ import java.util.List;
 
 @Service
 @Log4j2
-public class ApiKeyServiceImpl implements ApiKeyService {
+public class GeminiApiKeyServiceImpl implements GeminiApiKeyService {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Value("${path.apiKey}")
+    @Value("${path.apiKey.gemini}")
     private String pathApiKey;
     private String[] apiKeys;
     private int indexCurrentKey = 0;
@@ -28,7 +28,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     @PostConstruct
     public void init() {
         try (FileReader fileReader = new FileReader(pathApiKey);
-             BufferedReader bufferedReader = new BufferedReader(fileReader)) {
+            BufferedReader bufferedReader = new BufferedReader(fileReader)) {
             String line = bufferedReader.readLine();
             StringBuilder stringBuilder = new StringBuilder();
             while (line != null) {
@@ -54,7 +54,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
         this.apiKeys = apiKeys.toArray(String[]::new);
         Path file = Paths.get(pathApiKey);
         if (!Files.exists(file)) {
-            if(!Files.exists(file.getParent())) Files.createDirectory(file.getParent());
+            if (!Files.exists(file.getParent())) Files.createDirectory(file.getParent());
             Files.createFile(file);
         }
         String content = objectMapper.writeValueAsString(apiKeys);

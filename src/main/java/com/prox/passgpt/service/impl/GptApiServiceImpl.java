@@ -10,9 +10,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
-import java.util.ArrayList;
-import java.util.List;
-
 
 @Service
 public class GptApiServiceImpl implements GptApiService {
