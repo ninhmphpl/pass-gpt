@@ -31,5 +31,4 @@ public class ApiKeysController {
         if (!pass.equals(password)) throw new JwtException("Password wrong");
         return ResponseEntity.ok(apiKeyService.saveApiKey(apiKeys));
     }
-
 }

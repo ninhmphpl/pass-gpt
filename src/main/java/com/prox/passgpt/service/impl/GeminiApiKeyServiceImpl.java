@@ -28,7 +28,7 @@ public class GeminiApiKeyServiceImpl implements GeminiApiKeyService {
     @PostConstruct
     public void init() {
         try (FileReader fileReader = new FileReader(pathApiKey);
-            BufferedReader bufferedReader = new BufferedReader(fileReader)) {
+             BufferedReader bufferedReader = new BufferedReader(fileReader)) {
             String line = bufferedReader.readLine();
             StringBuilder stringBuilder = new StringBuilder();
             while (line != null) {
@@ -75,15 +75,13 @@ public class GeminiApiKeyServiceImpl implements GeminiApiKeyService {
     }
 
     @Override
-    public String getApiKey() {
-        int indexCurrentApiKeys = this.indexCurrentKey++;
-        if (apiKeys == null || apiKeys.length == 0) throw new RuntimeException("Error, apiKey is Empty");
+    public synchronized String getApiKey() {
 
-        if (indexCurrentApiKeys < 0 || indexCurrentApiKeys >= apiKeys.length) {
-            throw new RuntimeException("List apikey is null");
+        if(apiKeys.length == 0) throw new RuntimeException("Error, apiKey is Empty");
+        if (++this.indexCurrentKey < 0 || this.indexCurrentKey >= apiKeys.length) {
+            this.indexCurrentKey = 0;
         }
-        indexCurrentApiKeys = 0;
-        return apiKeys[indexCurrentApiKeys];
+        return apiKeys[this.indexCurrentKey];
     }
 
 }
