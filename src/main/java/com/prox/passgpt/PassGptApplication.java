@@ -5,11 +5,19 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.TimeZone;
+
 @SpringBootApplication
 public class PassGptApplication {
 
     public static void main(String[] args) {
+        // set time zone gmt +7
+        setTimeZone(TimeZone.getTimeZone("GMT+7"));
         SpringApplication.run(PassGptApplication.class, args);
+    }
+
+    private static void setTimeZone(TimeZone timeZone) {
+        TimeZone.setDefault(timeZone);
     }
 
 }
