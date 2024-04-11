@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.function.Consumer;
 
 @Service
 @Log4j2
@@ -24,6 +25,7 @@ public class GeminiApiKeyServiceImpl implements GeminiApiKeyService {
     private String pathApiKey;
     private String[] apiKeys;
     private int indexCurrentKey = 0;
+
 
     @PostConstruct
     public void init() {
@@ -83,5 +85,4 @@ public class GeminiApiKeyServiceImpl implements GeminiApiKeyService {
         }
         return apiKeys[this.indexCurrentKey];
     }
-
 }

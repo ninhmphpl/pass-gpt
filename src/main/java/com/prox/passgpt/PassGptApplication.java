@@ -12,7 +12,7 @@ public class PassGptApplication {
 
     public static void main(String[] args) {
         // set time zone gmt +7
-        setTimeZone(TimeZone.getTimeZone("GMT+7"));
+        TimeZone.setDefault(TimeZone.getTimeZone("GMT+7:00"));
         SpringApplication.run(PassGptApplication.class, args);
     }
 
