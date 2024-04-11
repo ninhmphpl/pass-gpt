@@ -19,5 +19,9 @@ public class PassGptApplication {
     private static void setTimeZone(TimeZone timeZone) {
         TimeZone.setDefault(timeZone);
     }
+    @Bean
+    public RestTemplate restTemplate(){
+        return new RestTemplate();
+    }
 
 }

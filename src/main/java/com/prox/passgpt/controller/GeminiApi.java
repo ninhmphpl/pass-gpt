@@ -57,7 +57,4 @@ public class GeminiApi {
         return ResponseEntity.ok(new GptApiV2Controller.Data(key, timeStamps));
     }
     public record Request(String content){}
-
-
-
 }

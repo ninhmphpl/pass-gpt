@@ -24,6 +24,8 @@ public class GeminiApiServiceImpl implements GeminiApiService, GeminiErrorServic
     private Consumer<String> token403;
     private Consumer<String> token400;
     private Consumer<String> token429;
+    private Consumer<String> tokenError;
+    private Runnable errorTimeOut;
     private final WebClient webClient = WebClient.builder()
             .baseUrl("https://generativelanguage.googleapis.com")
             .build();
@@ -48,10 +50,16 @@ public class GeminiApiServiceImpl implements GeminiApiService, GeminiErrorServic
         String apiKey;
         return callGeminiStream(content, apiKey = apiKeyService.getApiKey())
                 .onErrorResume(e -> {
+                    if(tokenError != null) tokenError.accept(apiKey + ":" + e.getMessage());
                     if (e.getMessage().contains("403") && token403 != null) token403.accept(apiKey);
                     else if (e.getMessage().contains("400") && token400 != null) token400.accept(apiKey);
                     else if (e.getMessage().contains("429") && token429 != null) token429.accept(apiKey);
-                    return tryNumber > 0 && !timeOut.get() ? tryCall(content, tryNumber - 1) : Flux.error(e);
+                    if( tryNumber > 0 && !timeOut.get()) {
+                        return  tryCall(content, tryNumber - 1);
+                    } else  {
+                        if(errorTimeOut != null) errorTimeOut.run();
+                        return Flux.error(e);
+                    }
                 });
     }
 
@@ -72,6 +80,16 @@ public class GeminiApiServiceImpl implements GeminiApiService, GeminiErrorServic
     @Override
     public void error429(Consumer<String> token429) {
         this.token429 = token429;
+    }
+
+    @Override
+    public void error(Consumer<String> message) {
+        this.tokenError = message;
+    }
+
+    @Override
+    public void errorTimeOut(Runnable errorTimeOut) {
+        this.errorTimeOut = errorTimeOut;
     }
 
     public record Part(String text) {

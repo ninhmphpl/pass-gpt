@@ -12,8 +12,8 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 @Service
 @Log4j2
@@ -23,7 +23,7 @@ public class GeminiApiKeyServiceImpl implements GeminiApiKeyService {
 
     @Value("${path.apiKey.gemini}")
     private String pathApiKey;
-    private String[] apiKeys;
+    private final List<String> apiKeys = new ArrayList<>();
     private int indexCurrentKey = 0;
 
 
@@ -38,10 +38,9 @@ public class GeminiApiKeyServiceImpl implements GeminiApiKeyService {
                 stringBuilder.append(line);
                 line = bufferedReader.readLine();
             }
-            apiKeys = objectMapper.readValue(stringBuilder.toString(), String[].class);
+            apiKeys.addAll(List.of(objectMapper.readValue(stringBuilder.toString(), String[].class)));
 
         } catch (IOException e) {
-            apiKeys = new String[0];
             try {
                 objectMapper.writeValue(new File(pathApiKey), apiKeys);
             } catch (IOException ex) {
@@ -53,36 +52,55 @@ public class GeminiApiKeyServiceImpl implements GeminiApiKeyService {
 
     @Override
     public List<String> saveApiKey(List<String> apiKeys) throws IOException {
-        this.apiKeys = apiKeys.toArray(String[]::new);
-        Path file = Paths.get(pathApiKey);
-        if (!Files.exists(file)) {
-            if (!Files.exists(file.getParent())) Files.createDirectory(file.getParent());
-            Files.createFile(file);
-        }
-        String content = objectMapper.writeValueAsString(apiKeys);
-        try (FileWriter fileWriter = new FileWriter(pathApiKey);
-             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)) {
-            bufferedWriter.write(content);
-            log.info("Dữ liệu JSON đã được ghi vào tệp thành công." + pathApiKey);
+        synchronized (this.apiKeys){
+            this.apiKeys.clear();
+            this.apiKeys.addAll(apiKeys);
+            Path file = Paths.get(pathApiKey);
+            if (!Files.exists(file)) {
+                if (!Files.exists(file.getParent())) Files.createDirectory(file.getParent());
+                Files.createFile(file);
+            }
+            String content = objectMapper.writeValueAsString(apiKeys);
+            try (FileWriter fileWriter = new FileWriter(pathApiKey);
+                 BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)) {
+                bufferedWriter.write(content);
+                log.info("Dữ liệu JSON đã được ghi vào tệp thành công." + pathApiKey);
 
-        } catch (IOException e) {
-            log.error(e);
+            } catch (IOException e) {
+                log.error(e);
+            }
+            return getApiKeys();
         }
-        return getApiKeys();
+
     }
 
     @Override
     public List<String> getApiKeys() {
-        return List.of(apiKeys);
+        synchronized (this.apiKeys){
+            return this.apiKeys;
+        }
     }
 
     @Override
-    public synchronized String getApiKey() {
-
-        if(apiKeys.length == 0) throw new RuntimeException("Error, apiKey is Empty");
-        if (++this.indexCurrentKey < 0 || this.indexCurrentKey >= apiKeys.length) {
-            this.indexCurrentKey = 0;
+    public String getApiKey() {
+        synchronized (this.apiKeys){
+            if(apiKeys.isEmpty()) throw new RuntimeException("Error, apiKey is Empty");
+            if (++this.indexCurrentKey < 0 || this.indexCurrentKey >= apiKeys.size()) {
+                this.indexCurrentKey = 0;
+            }
+            return apiKeys.get(this.indexCurrentKey);
         }
-        return apiKeys[this.indexCurrentKey];
+    }
+
+    @Override
+    public void deleteApiKey(String apiKey) {
+        synchronized (this.apiKeys){
+            this.apiKeys.remove(apiKey);
+            try {
+                objectMapper.writeValue(new File(pathApiKey), this.apiKeys);
+            } catch (IOException e) {
+                log.error(e);
+            }
+        }
     }
 }
