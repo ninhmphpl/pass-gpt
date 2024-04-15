@@ -1,5 +1,6 @@
 package com.prox.passgpt.service;
 
+import com.prox.passgpt.service.errorchat.GeminiErrorService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,4 +1,4 @@
-package com.prox.passgpt.service;
+package com.prox.passgpt.service.errorchat;
 
 import java.util.function.Consumer;
 

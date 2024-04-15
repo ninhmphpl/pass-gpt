@@ -1,5 +1,8 @@
 package com.prox.passgpt.controller;
 
+import com.prox.passgpt.model.ModelChat;
+import com.prox.passgpt.model.RequestBodyChat;
+import com.prox.passgpt.model.ResponseChat;
 import com.prox.passgpt.service.GptApiService;
 import com.prox.passgpt.service.SecurityService;
 import io.jsonwebtoken.JwtException;
@@ -49,6 +52,15 @@ public class GptApiV2Controller {
                 .contentType(MediaType.TEXT_EVENT_STREAM)
                 .body(apiService.makeStreamRequest(content));
     }
+
+    @PostMapping("/global")
+    public ResponseEntity<Flux<ResponseChat>> callApiGptStream(@RequestBody RequestBodyChat request){
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_EVENT_STREAM)
+                .body(apiService.makeStreamRequest(request, ModelChat.gpt35));
+    }
+
+
 
     public record Data(String key, long timeStamps){}
     @GetMapping("/token")

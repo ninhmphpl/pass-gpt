@@ -1,8 +1,9 @@
 package com.prox.passgpt.service.impl;
 
+import com.prox.passgpt.model.RequestGemini;
 import com.prox.passgpt.service.GeminiApiKeyService;
 import com.prox.passgpt.service.GeminiApiService;
-import com.prox.passgpt.service.GeminiErrorService;
+import com.prox.passgpt.service.errorchat.GeminiErrorService;
 import com.prox.passgpt.service.ThreadService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,7 +12,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -39,7 +39,7 @@ public class GeminiApiServiceImpl implements GeminiApiService, GeminiErrorServic
     private Flux<byte[]> callGeminiStream(String content, String apiKey) {
         return webClient.post()
                 .uri("/v1/models/gemini-pro:streamGenerateContent?alt=sse&key=" + apiKey)
-                .body(BodyInserters.fromValue(makeRequest(content)))
+                .body(BodyInserters.fromValue(RequestGemini.makeRequest(content)))
                 .retrieve()
                 .bodyToFlux(byte[].class);
     }
@@ -63,9 +63,7 @@ public class GeminiApiServiceImpl implements GeminiApiService, GeminiErrorServic
                 });
     }
 
-    private Request makeRequest(String content) {
-        return new Request(List.of(new Content(List.of(new Part(content)))));
-    }
+
 
     @Override
     public void error403(Consumer<String> token403) {
@@ -92,14 +90,6 @@ public class GeminiApiServiceImpl implements GeminiApiService, GeminiErrorServic
         this.errorTimeOut = errorTimeOut;
     }
 
-    public record Part(String text) {
-    }
-
-    public record Content(List<Part> parts) {
-    }
-
-    public record Request(List<Content> contents) {
-    }
 
 
 }
