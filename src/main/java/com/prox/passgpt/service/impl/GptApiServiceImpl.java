@@ -93,7 +93,8 @@ public class GptApiServiceImpl implements GptApiService, GptErrorService {
                 .header("Authorization", "Bearer " + apiKeyService.getApiKey())
                 .body(BodyInserters.fromValue(RequestGpt.createMessageStream(content, model)))
                 .retrieve()
-                .bodyToFlux(byte[].class);
+                .bodyToFlux(byte[].class)
+                .onErrorResume(throwable -> Flux.error(new RuntimeException("Error call Gemini", throwable)));
     }
 
     private Flux<byte[]> tryCall(String content, int tryNumber) {
