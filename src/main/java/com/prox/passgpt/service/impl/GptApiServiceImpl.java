@@ -5,6 +5,7 @@ import com.prox.passgpt.model.*;
 import com.prox.passgpt.service.ApiKeyService;
 import com.prox.passgpt.service.GptApiService;
 import com.prox.passgpt.service.ThreadService;
+import com.prox.passgpt.service.TokenGptService;
 import com.prox.passgpt.service.errorchat.GptErrorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +30,8 @@ public class GptApiServiceImpl implements GptApiService, GptErrorService {
     private ApiKeyService apiKeyService;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private TokenGptService tokenGptService;
     private final WebClient webClient = WebClient.builder()
             .baseUrl("https://api.openai.com")
             .build();
@@ -45,13 +48,36 @@ public class GptApiServiceImpl implements GptApiService, GptErrorService {
     }
 
     public Flux<ResponseChat> callStreamRequest(RequestBodyChat request, ModelChat model) {
+        String question = request.getQuestion();
+        StringBuilder answare = new StringBuilder();
+        AtomicBoolean set = new AtomicBoolean(true);
         return webClient.post()
                 .uri("/v1/chat/completions")
                 .header("Authorization", "Bearer " + apiKeyService.getApiKey())
                 .body(BodyInserters.fromValue(RequestGpt.createMessageStream(request, model)))
                 .retrieve()
                 .bodyToFlux(String.class)
-                .map(this::parseResponse);
+                .map(s -> {
+                    ResponseChat responseChat = parseResponse(s);
+                    if (responseChat.status == ResponseChat.Status.stream) {
+                        answare.append(responseChat.content);
+                    } else {
+                        if (set.get()) {
+                            if (model == ModelChat.gpt35) {
+                                tokenGptService.questionToken35(tokenGptService.calculateToken(question));
+                                tokenGptService.answerToken35(tokenGptService.calculateToken(answare.toString()));
+                            } else if (model == ModelChat.gpt35_shot) {
+                                tokenGptService.questionToken35Short(tokenGptService.calculateToken(question));
+                                tokenGptService.answerToken35Short(tokenGptService.calculateToken(answare.toString()));
+                            } else if (model == ModelChat.gpt35_100word) {
+                                tokenGptService.questionToken35Word100(tokenGptService.calculateToken(question));
+                                tokenGptService.answerToken35Word100(tokenGptService.calculateToken(answare.toString()));
+                            }
+                        }
+                        set.set(false);
+                    }
+                    return responseChat;
+                });
     }
 
     private ResponseChat parseResponse(String response) {
@@ -60,11 +86,11 @@ public class GptApiServiceImpl implements GptApiService, GptErrorService {
             if (response == null || response.isEmpty()) {
                 return new ResponseChat(ResponseChat.Status.stream, "");
             } else if (response.equals("[DONE]")) {
-                return new ResponseChat(ResponseChat.Status.stop, null);
+                return new ResponseChat(ResponseChat.Status.stop, "");
             } else if ((responseGptStream = parseResponseStream(response)) != null) {
                 if (!responseGptStream.choices.isEmpty()) {
                     if (responseGptStream.choices.get(0).finish_reason != null && responseGptStream.choices.get(0).finish_reason.equals("stop")) {
-                        return new ResponseChat(ResponseChat.Status.stop, null);
+                        return new ResponseChat(ResponseChat.Status.stop, "");
                     } else if (responseGptStream.choices.get(0).delta != null && responseGptStream.choices.get(0).delta.content != null) {
                         return new ResponseChat(ResponseChat.Status.stream, responseGptStream.choices.get(0).delta.content);
                     } else {
@@ -87,7 +113,7 @@ public class GptApiServiceImpl implements GptApiService, GptErrorService {
     }
 
 
-    private Flux<byte[]> callGeminiStream(String content) {
+    private Flux<byte[]> callGptStream(String content) {
         return webClient.post()
                 .uri("/v1/chat/completions")
                 .header("Authorization", "Bearer " + apiKeyService.getApiKey())
@@ -100,7 +126,7 @@ public class GptApiServiceImpl implements GptApiService, GptErrorService {
     private Flux<byte[]> tryCall(String content, int tryNumber) {
         AtomicBoolean timeOut = new AtomicBoolean(false);
         ThreadService.runAfterDelay(() -> timeOut.set(true), this.timeOut);
-        return callGeminiStream(content)
+        return callGptStream(content)
                 .onErrorResume(e -> tryNumber > 0 && !timeOut.get() ? tryCall(content, tryNumber - 1) : Flux.error(e));
     }
 
