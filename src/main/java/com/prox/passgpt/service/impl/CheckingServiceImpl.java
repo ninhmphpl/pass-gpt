@@ -250,6 +250,8 @@ public class CheckingServiceImpl implements CheckingService {
 
     @Override
     public Map<String, Map<String, Integer>> getErrorMapDetail() {
+        Map<String, Map<String, Integer>> errorMap = new HashMap<>(this.errorMap);
+        this.errorMap.clear();
         return errorMap;
     }
 
