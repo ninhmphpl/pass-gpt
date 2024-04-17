@@ -20,8 +20,6 @@ import java.util.function.Consumer;
 
 @Service
 public class GptApiServiceImpl implements GptApiService, GptErrorService {
-    @Value("${gpt.url}")
-    private String url;
     @Value("${gpt.model}")
     private String model;
     @Value("${timeOut}")
@@ -32,6 +30,12 @@ public class GptApiServiceImpl implements GptApiService, GptErrorService {
     private ObjectMapper objectMapper;
     @Autowired
     private TokenGptService tokenGptService;
+
+    private Consumer<String> token403;
+    private Consumer<String> token400;
+    private Consumer<String> token429;
+    private Consumer<String> tokenError;
+    private Runnable errorTimeOut;
     private final WebClient webClient = WebClient.builder()
             .baseUrl("https://api.openai.com")
             .build();
@@ -113,21 +117,33 @@ public class GptApiServiceImpl implements GptApiService, GptErrorService {
     }
 
 
-    private Flux<byte[]> callGptStream(String content) {
+    private Flux<byte[]> callGptStream(String content, String apiKey) {
         return webClient.post()
                 .uri("/v1/chat/completions")
-                .header("Authorization", "Bearer " + apiKeyService.getApiKey())
+                .header("Authorization", "Bearer " + apiKey)
                 .body(BodyInserters.fromValue(RequestGpt.createMessageStream(content, model)))
                 .retrieve()
                 .bodyToFlux(byte[].class)
-                .onErrorResume(throwable -> Flux.error(new RuntimeException("Error call Gemini", throwable)));
+                .onErrorResume(throwable -> Flux.error(new RuntimeException("Error call Gpt", throwable)));
     }
 
     private Flux<byte[]> tryCall(String content, int tryNumber) {
         AtomicBoolean timeOut = new AtomicBoolean(false);
         ThreadService.runAfterDelay(() -> timeOut.set(true), this.timeOut);
-        return callGptStream(content)
-                .onErrorResume(e -> tryNumber > 0 && !timeOut.get() ? tryCall(content, tryNumber - 1) : Flux.error(e));
+        String apiKey;
+        return callGptStream(content, apiKey = apiKeyService.getApiKey())
+                .onErrorResume(e -> {
+                    if(tokenError != null) tokenError.accept(apiKey + ":" + e.getMessage());
+                    if (e.getMessage().contains("403") && token403 != null) token403.accept(apiKey);
+                    else if (e.getMessage().contains("400") && token400 != null) token400.accept(apiKey);
+                    else if (e.getMessage().contains("429") && token429 != null) token429.accept(apiKey);
+                    if( tryNumber > 0 && !timeOut.get()) {
+                        return  tryCall(content, tryNumber - 1);
+                    } else  {
+                        if(errorTimeOut != null) errorTimeOut.run();
+                        return Flux.error(e);
+                    }
+                });
     }
 
     private Flux<ResponseChat> tryCall(RequestBodyChat request, ModelChat model, int tryNumber) {
@@ -141,26 +157,26 @@ public class GptApiServiceImpl implements GptApiService, GptErrorService {
     // =========================== Error ===========================
     @Override
     public void error403(Consumer<String> token403) {
-
+        this.token403 = token403;
     }
 
     @Override
     public void error400(Consumer<String> token404) {
-
+        this.token400 = token404;
     }
 
     @Override
     public void error429(Consumer<String> token404) {
-
+        this.token429 = token404;
     }
 
     @Override
     public void error(Consumer<String> token404) {
-
+        this.tokenError = token404;
     }
 
     @Override
     public void errorTimeOut(Runnable errorTimeOut) {
-
+        this.errorTimeOut = errorTimeOut;
     }
 }

@@ -13,9 +13,12 @@ import java.util.function.Consumer;
 @Service
 public class TokenGptGptServiceImpl implements TokenGptService {
     private Encoding encoding;
-    private Consumer<Integer> countToken35;
-    private Consumer<Integer> countToken35Short;
-    private Consumer<Integer> countToken35Word100;
+    private Consumer<Integer> countToken35Answer;
+    private Consumer<Integer> countToken35Question;
+    private Consumer<Integer> countToken35ShortAnswer;
+    private Consumer<Integer> countToken35ShortQuestion;
+    private Consumer<Integer> countToken35Word100Answer;
+    private Consumer<Integer> countToken35Word100Question;
 
     @PostConstruct
     public void init() {
@@ -33,47 +36,63 @@ public class TokenGptGptServiceImpl implements TokenGptService {
     }
 
     @Override
-    public void countTokenGpt35(Consumer<Integer> countToken) {
-        this.countToken35 = countToken;
+    public void countTokenGpt35Answer(Consumer<Integer> countToken) {
+        countToken35Answer = countToken;
     }
 
     @Override
+    public void countTokenGpt35Question(Consumer<Integer> countToken) {
+        countToken35Question = countToken;
+    }
+
+
+    @Override
     public void questionToken35(int count) {
-        if (countToken35 != null) countToken35.accept(count);
+        if (countToken35Question != null) countToken35Question.accept(count);
     }
 
     @Override
     public void answerToken35(int count) {
-        if (countToken35 != null) countToken35.accept(count);
+        if (countToken35Answer != null) countToken35Answer.accept(count);
     }
 
     @Override
-    public void countTokenGpt35Short(Consumer<Integer> countToken) {
-        this.countToken35Short = countToken;
+    public void countTokenGpt35ShortAnswer(Consumer<Integer> countToken) {
+        countToken35ShortAnswer = countToken;
+    }
+
+    @Override
+    public void countTokenGpt35ShortQuestion(Consumer<Integer> countToken) {
+        countToken35ShortQuestion = countToken;
     }
 
     @Override
     public void questionToken35Short(int count) {
-        if (countToken35 != null) countToken35.accept(count);
+        if (countToken35ShortQuestion != null) countToken35ShortQuestion.accept(count);
     }
 
     @Override
     public void answerToken35Short(int count) {
-        if (countToken35Short != null) countToken35.accept(count);
+        if (countToken35ShortAnswer != null) countToken35ShortAnswer.accept(count);
     }
 
     @Override
-    public void countTokenGpt35Word100(Consumer<Integer> countToken) {
-        this.countToken35Word100 = countToken;
+    public void countTokenGpt35Word100Answer(Consumer<Integer> countToken) {
+        countToken35Word100Answer = countToken;
+    }
+
+    @Override
+    public void countTokenGpt35Word100Question(Consumer<Integer> countToken) {
+        countToken35Word100Question = countToken;
     }
 
     @Override
     public void questionToken35Word100(int count) {
-        if (countToken35Word100 != null) countToken35Word100.accept(count);
+        if (countToken35Word100Question != null) countToken35Word100Question.accept(count);
     }
 
     @Override
     public void answerToken35Word100(int count) {
-        if (countToken35Word100 != null) countToken35Word100.accept(count);
+        if (countToken35Word100Answer != null) countToken35Word100Answer.accept(count);
     }
 }
