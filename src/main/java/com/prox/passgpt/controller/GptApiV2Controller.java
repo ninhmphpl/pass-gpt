@@ -28,12 +28,14 @@ public class GptApiV2Controller {
     @Value("${password}")
     private String password;
 
-    public record DataBody(String content){}
+    public record DataBody(String content) {
+    }
+
     @PostMapping
     public ResponseEntity<Flux<byte[]>> callApiGptStream(@RequestBody DataBody dataBody,
                                                          @RequestHeader("Key") Optional<String> key,
                                                          @RequestHeader("TimeStamps") Optional<Long> timeStamps
-    ){
+    ) {
         securityService.parseKey(
                 timeStamps.orElseThrow(() -> new JwtException("TimeStamps header required")),
                 key.orElseThrow(() -> new JwtException("Key header required")));
@@ -41,10 +43,11 @@ public class GptApiV2Controller {
                 .contentType(MediaType.TEXT_EVENT_STREAM)
                 .body(apiService.makeStreamRequest(dataBody.content));
     }
+
     @GetMapping
     public ResponseEntity<Flux<byte[]>> callApiGptStream(@RequestParam("content") String content,
                                                          @RequestHeader("Key") Optional<String> key,
-                                                         @RequestHeader("TimeStamps") Optional<Long> timeStamps){
+                                                         @RequestHeader("TimeStamps") Optional<Long> timeStamps) {
         securityService.parseKey(
                 timeStamps.orElseThrow(() -> new JwtException("TimeStamps header required")),
                 key.orElseThrow(() -> new JwtException("Key header required")));
@@ -54,23 +57,29 @@ public class GptApiV2Controller {
     }
 
     @PostMapping("/global")
-    public ResponseEntity<Flux<ResponseChat>> callApiGptStream(@RequestBody RequestBodyChat request){
+    public ResponseEntity<Flux<ResponseChat>> callApiGptStream(@RequestBody RequestBodyChat request,
+                                                               @RequestHeader("Key") Optional<String> key,
+                                                               @RequestHeader("TimeStamps") Optional<Long> timeStamps
+    ) {
+        securityService.parseKey(
+                timeStamps.orElseThrow(() -> new JwtException("TimeStamps header required")),
+                key.orElseThrow(() -> new JwtException("Key header required")));
         return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_EVENT_STREAM)
                 .body(apiService.makeStreamRequest(request, ModelChat.gpt35));
     }
 
 
+    public record Data(String key, long timeStamps) {
+    }
 
-    public record Data(String key, long timeStamps){}
     @GetMapping("/token")
-    public ResponseEntity<Data> getToken(@RequestHeader("Authorization") String pass){
-        if(!pass.equals(password)) throw new JwtException("Password wrong");
+    public ResponseEntity<Data> getToken(@RequestHeader("Authorization") String pass) {
+        if (!pass.equals(password)) throw new JwtException("Password wrong");
         long timeStamps = System.currentTimeMillis();
         String key = securityService.getKey(timeStamps);
         return ResponseEntity.ok(new Data(key, timeStamps));
     }
-
 
 
 }

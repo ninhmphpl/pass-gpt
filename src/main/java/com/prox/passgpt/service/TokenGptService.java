@@ -20,6 +20,4 @@ public interface TokenGptService {
     void countTokenGpt35Word100Question(Consumer<Integer> countToken);
     void questionToken35Word100(int count);
     void answerToken35Word100(int count);
-
-
 }
