@@ -140,8 +140,10 @@ public class GptApiServiceImpl implements GptApiService, GptErrorService {
                     if (tryNumber > 0 && !timeOut.get()) {
                         return tryCallV1(content, tryNumber - 1);
                     } else {
-                        if (errorTimeOut != null) errorTimeOut.run();
-                        return Flux.error(e);
+                        if (errorTimeOut != null) {
+                            errorTimeOut.run();
+                            return Flux.error(new RuntimeException("Time out"));
+                        } else return Flux.error(e);
                     }
                 });
     }
