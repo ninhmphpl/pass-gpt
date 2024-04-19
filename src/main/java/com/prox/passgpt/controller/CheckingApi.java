@@ -1,12 +1,10 @@
 package com.prox.passgpt.controller;
 
+import com.prox.passgpt.model.TokenErrorDetail;
 import com.prox.passgpt.service.CheckingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @CrossOrigin("*")
@@ -16,17 +14,21 @@ public class CheckingApi {
     private CheckingService checkingService;
 
     @GetMapping("/token")
-    public ResponseEntity<?> getChecking(){
-        return ResponseEntity.ok(checkingService.getCheckingTokenCount());
+    public ResponseEntity<?> getChecking(@RequestParam(value = "page", defaultValue = "0") int page,
+                                         @RequestParam(value = "size", defaultValue = "10") int size){
+        return ResponseEntity.ok(checkingService.getCheckingTokenCount(page, size));
     }
 
     @GetMapping("/error")
-    public ResponseEntity<?> getCheckingError(){
-        return ResponseEntity.ok(checkingService.getCheckingError());
+    public ResponseEntity<?> getCheckingError(@RequestParam(value = "page", defaultValue = "0") int page,
+                                              @RequestParam(value = "size", defaultValue = "10") int size){
+
+
+        return ResponseEntity.ok(checkingService.getCheckingError(page, size));
     }
 
     @GetMapping("/error/detail")
-    public ResponseEntity<?> getErrorMapDetail(){
-        return ResponseEntity.ok(checkingService.getErrorMapDetail());
+    public ResponseEntity<TokenErrorDetail[]> getErrorMapDetail(){
+        return ResponseEntity.ok(TokenErrorDetail.of(checkingService.getErrorMapDetail()));
     }
 }

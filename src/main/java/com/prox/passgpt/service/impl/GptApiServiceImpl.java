@@ -43,21 +43,21 @@ public class GptApiServiceImpl implements GptApiService, GptErrorService {
     @Override
     public Flux<byte[]> makeStreamRequest(String content) {
 
-        return tryCall(content, apiKeyService.getApiKeys().size());
+        return tryCallV1(content, apiKeyService.getApiKeys().size());
     }
 
     @Override
     public Flux<ResponseChat> makeStreamRequest(RequestBodyChat request, ModelChat model) {
-        return tryCall(request, model, apiKeyService.getApiKeys().size());
+        return tryCallV2(request, model, apiKeyService.getApiKeys().size());
     }
 
-    public Flux<ResponseChat> callStreamRequest(RequestBodyChat request, ModelChat model) {
+    public Flux<ResponseChat> callStreamRequest(RequestBodyChat request, ModelChat model, String apiKey) {
         String question = request.getQuestion();
         StringBuilder answare = new StringBuilder();
         AtomicBoolean set = new AtomicBoolean(true);
         return webClient.post()
                 .uri("/v1/chat/completions")
-                .header("Authorization", "Bearer " + apiKeyService.getApiKey())
+                .header("Authorization", "Bearer " + apiKey)
                 .body(BodyInserters.fromValue(RequestGpt.createMessageStream(request, model)))
                 .retrieve()
                 .bodyToFlux(String.class)
@@ -127,30 +127,42 @@ public class GptApiServiceImpl implements GptApiService, GptErrorService {
                 .onErrorResume(throwable -> Flux.error(new RuntimeException("Error call Gpt", throwable)));
     }
 
-    private Flux<byte[]> tryCall(String content, int tryNumber) {
+    private Flux<byte[]> tryCallV1(String content, int tryNumber) {
         AtomicBoolean timeOut = new AtomicBoolean(false);
         ThreadService.runAfterDelay(() -> timeOut.set(true), this.timeOut);
         String apiKey;
         return callGptStream(content, apiKey = apiKeyService.getApiKey())
                 .onErrorResume(e -> {
-                    if(tokenError != null) tokenError.accept(apiKey + ":" + e.getMessage());
+                    if (tokenError != null) tokenError.accept(apiKey);
                     if (e.getMessage().contains("403") && token403 != null) token403.accept(apiKey);
                     else if (e.getMessage().contains("400") && token400 != null) token400.accept(apiKey);
                     else if (e.getMessage().contains("429") && token429 != null) token429.accept(apiKey);
-                    if( tryNumber > 0 && !timeOut.get()) {
-                        return  tryCall(content, tryNumber - 1);
-                    } else  {
-                        if(errorTimeOut != null) errorTimeOut.run();
+                    if (tryNumber > 0 && !timeOut.get()) {
+                        return tryCallV1(content, tryNumber - 1);
+                    } else {
+                        if (errorTimeOut != null) errorTimeOut.run();
                         return Flux.error(e);
                     }
                 });
     }
 
-    private Flux<ResponseChat> tryCall(RequestBodyChat request, ModelChat model, int tryNumber) {
+    private Flux<ResponseChat> tryCallV2(RequestBodyChat request, ModelChat model, int tryNumber) {
         AtomicBoolean timeOut = new AtomicBoolean(false);
         ThreadService.runAfterDelay(() -> timeOut.set(true), this.timeOut);
-        return callStreamRequest(request, model)
-                .onErrorResume(e -> tryNumber > 0 && !timeOut.get() ? tryCall(request, model, tryNumber - 1) : Flux.error(e));
+        String apiKey;
+        return callStreamRequest(request, model, apiKey = apiKeyService.getApiKey())
+                .onErrorResume(e -> {
+                    if (tokenError != null) tokenError.accept(apiKey);
+                    if (e.getMessage().contains("403") && token403 != null) token403.accept(apiKey);
+                    else if (e.getMessage().contains("400") && token400 != null) token400.accept(apiKey);
+                    else if (e.getMessage().contains("429") && token429 != null) token429.accept(apiKey);
+                    if (tryNumber > 0 && !timeOut.get()) {
+                        return tryCallV2(request, model, tryNumber - 1);
+                    } else {
+                        if (timeOut.get() && errorTimeOut != null) errorTimeOut.run();
+                        return Flux.error(e);
+                    }
+                });
     }
 
 

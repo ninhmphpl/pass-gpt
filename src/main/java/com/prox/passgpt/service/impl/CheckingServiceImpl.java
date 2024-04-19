@@ -19,10 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -214,10 +211,10 @@ public class CheckingServiceImpl implements CheckingService {
     }
 
     @Override
-    public List<CheckingTokenCount> getCheckingTokenCount() {
+    public List<CheckingTokenCount> getCheckingTokenCount(int page, int size) {
         saveCheckingTokenCount();
         List<CheckingTokenCount> checkingTokenCounts = new ArrayList<>();
-        File[] files = getAllFile(pathSaveCountToken);
+        File[] files = getAllFileLast(pathSaveCountToken, page, size);
         for (File file : files) {
             try {
                 String content = Files.readString(file.toPath());
@@ -232,10 +229,10 @@ public class CheckingServiceImpl implements CheckingService {
 
 
     @Override
-    public List<CheckingError> getCheckingError() {
+    public List<CheckingError> getCheckingError(int page, int size) {
         saveCheckingError();
         List<CheckingError> checkingErrors = new ArrayList<>();
-        File[] files = getAllFile(pathSaveError);
+        File[] files = getAllFileLast(pathSaveError, page, size);
         for (File file : files) {
             try {
                 String content = Files.readString(file.toPath());
@@ -255,8 +252,13 @@ public class CheckingServiceImpl implements CheckingService {
         return errorMap;
     }
 
-    private File[] getAllFile(String path) {
+    private File[] getAllFileLast(String path, int page, int size) {
         File file = new File(path);
-        return file.listFiles();
+        File[] files = file.listFiles();
+        if(files == null) return new File[0];
+        files = Arrays.stream(files).sorted(Comparator.comparing(File::getName).reversed()).toArray(File[]::new);
+        int start = page * size;
+        int end = Math.min(files.length, start + size);
+        return Arrays.copyOfRange(files, start, end);
     }
 }

@@ -16,7 +16,7 @@ import java.util.List;
 
 @Service
 @Log4j2
-public class ApiKeyServiceImpl implements ApiKeyService {
+public class GptApiKeyServiceImpl implements ApiKeyService {
     @Autowired
     private ObjectMapper objectMapper;
 

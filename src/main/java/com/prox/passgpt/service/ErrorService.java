@@ -31,7 +31,7 @@ public class ErrorService {
         geminiErrorService.error429(s ->
                 restTemplate.postForLocation(urlWebhook, new BodyWebhook("Error 429: " + s))
         );
-        geminiErrorService.error(System.out::println);
+        geminiErrorService.error(System.err::println);
         geminiErrorService.errorTimeOut(() -> System.out.println("Error TimeOut"));
     }
 

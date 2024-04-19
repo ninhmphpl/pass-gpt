@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface CheckingService {
-    List<CheckingTokenCount> getCheckingTokenCount();
-    List<CheckingError> getCheckingError();
+    List<CheckingTokenCount> getCheckingTokenCount(int page, int size);
+    List<CheckingError> getCheckingError(int page, int size);
     Map<String, Map<String, Integer>> getErrorMapDetail();
 }
